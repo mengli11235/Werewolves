@@ -4,8 +4,9 @@ import sys
 import random
 
 PlayerList = ['w1', 'w2', 'w3', 'w4', 'v1', 'v2', 'v3', 'v4', 'se', 'wi', 'gr', 'ht']
-IdentidyList = ['werewolf', 'werewolf', 'werewolf', 'werewolf', 'villager', 'villager', 'villager', 'villager', 'seer',
+IdentityList = ['werewolf', 'werewolf', 'werewolf', 'werewolf', 'villager', 'villager', 'villager', 'villager', 'seer',
                 'witch', 'guardian', 'hunter']
+DeadList = []
 
 class Player:
 
@@ -65,12 +66,12 @@ class Seer(Villager):
     def seecard(self):
             card = 0
             while True:
-                card = random.randrange(0, len(Playerlist))
-                if card not in seen:
-                    self.seen.append(card)
+                card = random.randrange(0, len(PlayerList))
+                if PlayerList[card] not in self.seen and PlayerList[card] not in DeadList:
+                    self.seen.append(PlayerList[card])
                     break
-            self.changek(PlayerList[card], IdentidyList[card])
-            return card
+            self.changek(PlayerList[card], IdentityList[card])
+            return PlayerList[card]
 
 
 class Witch(Villager):
@@ -83,17 +84,44 @@ class Witch(Villager):
             return self.kn['self.name']
         else:
             return 'not'+self.kn['self.name']
+    def revive(self, victim):
+        if random.random() > 0.5:
+            return True
+        else:
+            return False
+
+    def poison(self):
+        if random.random() > 0.5:
+            card = 0
+            while True:
+                card = random.randrange(0, len(PlayerList))
+                if PlayerList[card] not in DeadList:
+                    break
+            return PlayerList[card]
+        else:
+            return ""
 
 class Guardian(Villager):
-    def __init__(self, kn, name, rule, target):
+    def __init__(self, kn, name, rule, guarded):
         Villager.__init__(self, kn, name, rule)
-        self.target = target
+        self.guarded = guarded
 
     def chooseSpeech(self):
         if random.random() > 0.5:
             return self.kn['self.name']
         else:
             return 'not'+self.kn['self.name']
+
+    def guard(self, night):
+        if night == 1:
+            return self.name
+        card = 0
+        while True:
+            card = random.randrange(0, len(PlayerList))
+            if PlayerList[card] not in DeadList and PlayerList[card] != self.guarded:
+                break
+        self.guarded = PlayerList[card]
+        return PlayerList[card]
 
 class Hunter(Villager):
     def __init__(self, kn, name, rule, target):
@@ -105,6 +133,14 @@ class Hunter(Villager):
             return self.kn['self.name']
         else:
             return 'not'+self.kn['self.name']
+
+    def retaliate(self):
+        card = 0
+        while True:
+            card = random.randrange(0, len(PlayerList))
+            if PlayerList[card] not in DeadList:
+                break
+        return PlayerList[card]
 
 class Model:
     def __init__(self, rule, target):
@@ -120,12 +156,11 @@ class Model:
         self.w4 = Werewolf([], 'w4', self.rule, target)
         self.se = Seer([], 'se', self.rule, [])
         self.wi = Witch([], 'wi', self.rule, target)
-        self.gr = Guardian([], 'gr', self.rule, target)
+        self.gr = Guardian([], 'gr', self.rule, "")
         self.ht = Hunter([], 'ht', self.rule, target)
         self.villist = [self.v1, self.v2, self.v3, self.v4]
         self.spelist = [self.se, self.wi, self.gr, self.ht]
         self.wolflist = [self.w1, self.w2, self.w3, self.w4]
-        self.deadlist = []
 
     def initialSet(self):
         newk = {'v1': 'notwerewolf', 'v2': 'notwerewolf', 'v3': 'notwerewolf', 'v4': 'notwerewolf', 'w1': 'werewolf',
@@ -141,26 +176,49 @@ class Model:
         self.se.update({'ht': 'hunter'})
         # print(self.w2.kn)
 
-    def wolfKill(self, night):
+    def wolfKill(self):
         bins = [0, 0, 0, 0]
         if len(self.villist) < len(self.spelist):
             killlist = self.villist
         else:
             killlist = self.spelist
         for w in self.wolflist:
-                bins[w.chooseKill(night, killlist)] += 1
-        vic = killlist[bins.index(max(bins))]
-        self.deadlist.append(vic)
-        if len(self.villist) < len(self.spelist):
-            self.villist.remove(vic)
-        else:
-            self.spelist.remove(vic)
+                bins[w.chooseKill(self.night, killlist)] += 1
+        vic = killlist[bins.index(max(bins))].getName()
         return vic
 
     def overnight(self):
         self.night += 1
+        guarded = self.gr.guard(self.night)
         checked = self.se.seecard()
-        victim = self.wolfKill(self.night)
+        vicList = []
+        victim = self.wolfKill()
+
+        if not self.wi.revive(victim.getName()):
+            if victim.getName() != guarded:
+                DeadList.append(victim.getName())
+                vicList.append(victim.getName())
+
+        poisoned = self.wi.poison()
+        if poisoned != "":
+            DeadList.append(poisoned)
+            vicList.append(poisoned)
+
+        if "ht" in vicList:
+            revenged = self.ht.retaliate()
+            if revenged != "":
+                DeadList.append(revenged)
+                vicList.append(revenged)
+
+        for any in self.villist:
+            if any.getName() in vicList:
+                self.villist.remove(any)
+        for any in self.spelist:
+            if any.getName() in vicList:
+                self.spelist.remove(any)
+        return vicList
+
+
 
 def setup():
     pass
