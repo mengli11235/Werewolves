@@ -2,7 +2,7 @@
 
 import sys
 import random
-import copy
+import model
 
 PlayerList = ['w1', 'w2', 'w3', 'w4', 'v1', 'v2', 'v3', 'v4', 'se', 'wi', 'gr', 'ht']
 IdentityList = ['werewolf', 'werewolf', 'werewolf', 'werewolf', 'villager', 'villager', 'villager', 'villager', 'seer',
@@ -15,18 +15,17 @@ class Player:
         self.kn = kn
         self.name = name
 
-    def update(self, newk):
-        self.kn = newk
+    def update(self, newset):
+        self.kn = newset
 
-    def changek(self, target, newk):
-        self.kn[target] = newk
+    def changek(self, newk):
+        self.kn, falseo = model.checkconflict(self.kn, newk)
 
-    ## list of Objects, str not callable???
-    # def getName(self):
-    #     return self.name()
+    def getName(self):
+        return self.name
 
     def getTarget(self):
-        return self.name
+        return self.getName()
 
 class Villager(Player):
 
@@ -48,9 +47,9 @@ class Werewolf(Player):
         self.target = target
     def chooseSpeech(self):
         if random.random() > 0.5:
-            return self.kn['self.name']
+            return self.kn[self.getName()]
         else:
-            return 'not'+self.kn['self.name']
+            return 'not'+self.kn[self.getName()]
     def chooseKill(self, night, killlist):
         if night == 1:
             return random.randrange(0, len(killlist))
@@ -71,9 +70,9 @@ class Seer(Villager):
 
     def chooseSpeech(self):
         if random.random() > 0.5:
-            return self.kn['self.name']
+            return self.kn[self.getName()]
         else:
-            return 'not' + self.kn['self.name']
+            return 'not' + self.kn[self.getName()]
 
     def seecard(self):
             card = 0
@@ -82,7 +81,8 @@ class Seer(Villager):
                 if PlayerList[card] not in self.seen and PlayerList[card] not in DeadList:
                     self.seen.append(PlayerList[card])
                     break
-            self.changek(PlayerList[card], IdentityList[card])
+
+            self.changek((PlayerList[card], [(IdentityList[card], 't')]))
             return PlayerList[card]
 
 
@@ -93,9 +93,9 @@ class Witch(Villager):
 
     def chooseSpeech(self):
         if random.random() > 0.5:
-            return self.kn['self.name']
+            return self.kn[self.getName()]
         else:
-            return 'not'+self.kn['self.name']
+            return 'not'+self.kn[self.getName()]
     def revive(self, victim):
         if random.random() > 0.5:
             return True
@@ -121,13 +121,13 @@ class Guardian(Villager):
 
     def chooseSpeech(self):
         if random.random() > 0.5:
-            return self.kn['self.name']
+            return self.kn[self.getName()]
         else:
-            return 'not'+self.kn['self.name']
+            return 'not'+self.kn[self.getName()]
 
     def guard(self, night):
         if night == 1:
-            return self.name
+            return self.getName()
         card = 0
         while True:
             card = random.randrange(0, len(PlayerList))
@@ -143,9 +143,9 @@ class Hunter(Villager):
 
     def chooseSpeech(self):
         if random.random() > 0.5:
-            return self.kn['self.name']
+            return self.kn[self.getName()]
         else:
-            return 'not'+self.kn['self.name']
+            return 'not'+self.kn[self.getName()]
 
     def retaliate(self):
         card = 0
@@ -175,21 +175,32 @@ class Model:
         self.ht = Hunter([], 'ht', self.rule, target)
         self.spelist = [self.se, self.wi, self.gr, self.ht]
     def initialSet(self):
-        newk = {'v1': 'notwerewolf', 'v2': 'notwerewolf', 'v3': 'notwerewolf', 'v4': 'notwerewolf', 'w1': 'werewolf',
-                'w2': 'werewolf', 'w3': 'werewolf', 'w4': 'werewolf', 'se': 'notwerewolf', 'wi': 'notwerewolf', 'gr': 'notwerewolf', 'ht': 'notwerewolf'}
-        # print(newk['v2'])
-        for v in self.villist:
-            v.update({'v1': 'villager'})
+        kwolf = {'v1': [('notwerewolf', 't')], 'v2': [('notwerewolf', 't')], 'v3': [('notwerewolf', 't')], 'v4': [('notwerewolf', 't')], 'w1': [('werewolf', 't')],
+                'w2': [('werewolf', 't')], 'w3': [('werewolf', 't')], 'w4': [('werewolf', 't')], 'se': [('notwerewolf', 't')], 'wi': [('notwerewolf', 't')], 'gr': [('notwerewolf', 't')], 'ht': [('notwerewolf', 't')]}
+        # print(kwolf['v2'])
+        for i, v in enumerate(self.villist):
+            inik = {'v1': [], 'v2': [], 'v3': [], 'v4': [], 'w1': [], 'w2': [], 'w3': [], 'w4': [], 'se': [], 'wi': [],
+                    'gr': [], 'ht': []}
+            v.update(inik)
+            v.kn[v.getName()] = [('villager', 't')]
         for w in self.wolflist:
-            w.update(newk)
-        self.se.update({'se': 'seer'})
-        self.wi.update({'wi': 'witch'})
-        self.gr.update({'gr': 'guardian'})
-        self.ht.update({'ht': 'hunter'})
-        # print(self.w2.kn)
+            w.update(kwolf)
+        for v in self.spelist:
+            inik = {'v1': [], 'v2': [], 'v3': [], 'v4': [], 'w1': [], 'w2': [], 'w3': [], 'w4': [], 'se': [], 'wi': [],
+                    'gr': [], 'ht': []}
+            v.update(inik)
+            v.kn[v.getName()] = [(IdentityList[PlayerList.index(v.getName())], 't')]
 
-    def announce(self, toannounce):
-        pass
+    def announce(self, toannounce, announcetype):
+        for p in self.spelist:
+            for i in toannounce:
+                p.changek((i, [(IdentityList[PlayerList.index(i)], announcetype)]))
+        for p in self.villist:
+            for i in toannounce:
+                p.changek((i, [(IdentityList[PlayerList.index(i)], announcetype)]))
+        for p in self.wolflist:
+            for i in toannounce:
+                p.changek((i, [(IdentityList[PlayerList.index(i)], announcetype)]))
 
     def discuss(self):
         pass
@@ -217,9 +228,9 @@ class Model:
                 bins[w.chooseKill(self.night, self.spelist)] += 1
 
         if len(self.villist) < len(self.spelist):
-            vic = self.villist[bins.index(max(bins))].name
+            vic = self.villist[bins.index(max(bins))].getName()
         else:
-            vic = self.spelist[int(bins.index(max(bins)))].name
+            vic = self.spelist[int(bins.index(max(bins)))].getName()
         return vic
 
     def overnight(self):
@@ -228,20 +239,20 @@ class Model:
 
         guarded = ""
         checked = ""
-        if self.gr.name not in DeadList:
+        if self.gr.getName() not in DeadList:
             guarded = self.gr.guard(self.night)
-        if self.se.name not in DeadList:
+        if self.se.getName() not in DeadList:
             checked = self.se.seecard()
         vicList = []
         victim = self.wolfKill()
 
-        if not self.wi.revive(victim) or self.wi.name in DeadList:
+        if not self.wi.revive(victim) or self.wi.getName() in DeadList:
             if victim != guarded:
                 DeadList.append(victim)
                 vicList.append(victim)
 
         poisoned = ""
-        if self.wi.name not in DeadList:
+        if self.wi.getName() not in DeadList:
             poisoned = self.wi.poison()
         if poisoned != "":
             DeadList.append(poisoned)
@@ -254,17 +265,18 @@ class Model:
                 vicList.append(revenged)
 
         for any in self.villist:
-            if any.name in vicList:
+            if any.getName() in vicList:
                 self.villist.remove(any)
         for any in self.spelist:
-            if any.name in vicList:
+            if any.getName() in vicList:
                 self.spelist.remove(any)
         return vicList, checked
 
     def overday(self, vicList, checked):
-        self.announce(vicList)
+        print(self.se.kn)
+        self.announce(vicList, 'd')
         if checked != "":
-            self.announce([checked])
+            self.announce([checked], 't')
         self.discuss()
         vicList = []
         executed = self.vote()
@@ -276,15 +288,15 @@ class Model:
                 DeadList.append(revenged)
                 vicList.append(revenged)
         for any in self.villist:
-            if any.name in vicList:
+            if any.getName() in vicList:
                 self.villist.remove(any)
         for any in self.spelist:
-            if any.name in vicList:
+            if any.getName() in vicList:
                 self.spelist.remove(any)
         for any in self.wolflist:
-            if any.name in vicList:
+            if any.getName() in vicList:
                 self.wolflist.remove(any)
-        self.announce(vicList)
+        self.announce(vicList, 'd')
 
 
     def checkwin(self):
