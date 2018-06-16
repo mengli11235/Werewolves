@@ -30,15 +30,26 @@ class Player:
 
 class Villager(Player):
 
-    def __init__(self, kn, name, rule):
+    def __init__(self, kn, name, rule, target):
         Player.__init__(self, kn, name)
         self.rule = rule
+        self.target = target
+
+    def chooseSpeech(self):
+        if self.rule == "naive":
+            if random.random() > 0.5:
+                return self.kn[self.getName()]
+            else:
+                return 'not'+self.kn[self.getName()]
 
     def villagervote(self):
-        if random.random() > 0.5:
-            return PlayerList.index(self.getTarget())
-        else:
-            return PlayerList.index(self.getTarget())
+        if self.rule == "naive":
+            card = 0
+            while True:
+                card = random.randrange(0, len(PlayerList))
+                if PlayerList[card] not in DeadList and PlayerList[card] != self.getName() and IdentityList[card] != 'seer':
+                    break
+            return card
 
 class Werewolf(Player):
 
@@ -46,36 +57,45 @@ class Werewolf(Player):
         Player.__init__(self, kn, name)
         self.rule = rule
         self.target = target
+
     def chooseSpeech(self):
-        if random.random() > 0.5:
-            return self.kn[self.getName()]
-        else:
-            return 'not'+self.kn[self.getName()]
+        if self.rule == "naive":
+            if random.random() > 0.5:
+                return self.kn[self.getName()]
+            else:
+                return 'not'+self.kn[self.getName()]
+
     def chooseKill(self, night, killlist):
-        if night == 1:
-            return random.randrange(0, len(killlist))
-        else:
-            return random.randrange(0, len(killlist))
+        if self.target == "simple":
+            if night == 1:
+                return random.randrange(0, len(killlist))
+            else:
+                return random.randrange(0, len(killlist))
 
     def wolfvote(self):
-        if random.random() > 0.5:
-            return PlayerList.index(self.getTarget())
-        else:
-            return PlayerList.index(self.getTarget())
+        if self.rule == "naive":
+            card = 0
+            while True:
+                card = random.randrange(4, len(PlayerList))
+                if PlayerList[card] not in DeadList and PlayerList[card] != self.getName():
+                    break
+            return card
 
 
 class Seer(Villager):
-    def __init__(self, kn, name, rule, seen):
-        Villager.__init__(self, kn, name, rule)
+    def __init__(self, kn, name, rule, seen, target):
+        Villager.__init__(self, kn, name, rule, target)
         self.seen = seen
 
     def chooseSpeech(self):
-        if random.random() > 0.5:
-            return self.kn[self.getName()]
-        else:
-            return 'not' + self.kn[self.getName()]
+        if self.rule == "naive":
+            if random.random() > 0.5:
+                return self.kn[self.getName()]
+            else:
+                return 'not' + self.kn[self.getName()]
 
     def seecard(self):
+        if self.target == "simple":
             card = 0
             tempbin = 0
             for i in DeadList:
@@ -96,92 +116,110 @@ class Seer(Villager):
 
 class Witch(Villager):
     def __init__(self, kn, name, rule, target):
-        Villager.__init__(self, kn, name, rule)
-        self.target = target
+        Villager.__init__(self, kn, name, rule, target)
+        self.poisoned = 0
+        self.revived = 0
 
     def chooseSpeech(self):
-        if random.random() > 0.5:
-            return self.kn[self.getName()]
-        else:
-            return 'not'+self.kn[self.getName()]
+        if self.rule == "naive":
+            if random.random() > 0.5:
+                return self.kn[self.getName()]
+            else:
+                return 'not'+self.kn[self.getName()]
+
     def revive(self, victim):
-        if random.random() > 0.5:
-            return True
-        else:
-            return False
+        if self.target == "simple":
+            if self.revived == 0:
+                if victim == self.getName():
+                    self.revived = 1
+                    return True
+                elif random.random() > 0.5:
+                    self.revived = 1
+                    return True
+                else:
+                    return False
 
     def poison(self):
-        if random.random() > 0.5:
-            card = 0
-            while True:
-                card = random.randrange(0, len(PlayerList))
-                if PlayerList[card] not in DeadList:
-                    break
-            return PlayerList[card]
-        else:
-            return ""
+        if self.target == "simple":
+            if self.poisoned == 0:
+                if random.random() > 0.5:
+                    card = 0
+                    while True:
+                        card = random.randrange(0, len(PlayerList))
+                        if PlayerList[card] not in DeadList and  PlayerList[card] != self.getName() and IdentityList[card] != "seer":
+                            break
+                    self.poisoned = 1
+                    return PlayerList[card]
+                else:
+                    return ""
+            else:
+                return ""
 
 
 class Guardian(Villager):
-    def __init__(self, kn, name, rule, guarded):
-        Villager.__init__(self, kn, name, rule)
+    def __init__(self, kn, name, rule, guarded, target):
+        Villager.__init__(self, kn, name, rule, target)
         self.guarded = guarded
 
     def chooseSpeech(self):
-        if random.random() > 0.5:
-            return self.kn[self.getName()]
-        else:
-            return 'not'+self.kn[self.getName()]
+        if self.rule == "naive":
+            if random.random() > 0.5:
+                return self.kn[self.getName()]
+            else:
+                return 'not'+self.kn[self.getName()]
 
     def guard(self, night):
-        if night == 1:
-            return self.getName()
-        card = 0
-        if len(DeadList) == len(PlayerList)-1 and self.guarded == self.getName():
-            return ""
-        while True:
-            card = random.randrange(0, len(PlayerList))
-            if PlayerList[card] not in DeadList and PlayerList[card] != self.guarded:
-                break
-        self.guarded = PlayerList[card]
-        return PlayerList[card]
+        if self.target == "simple":
+            if night == 1:
+                return self.getName()
+            card = 0
+            if len(DeadList) == len(PlayerList)-1 and self.guarded == self.getName():
+                return ""
+            while True:
+                card = random.randrange(0, len(PlayerList))
+                if PlayerList[card] not in DeadList and PlayerList[card] != self.guarded:
+                    break
+            self.guarded = PlayerList[card]
+            print(self.guarded)
+            return PlayerList[card]
 
 class Hunter(Villager):
     def __init__(self, kn, name, rule, target):
-        Villager.__init__(self, kn, name, rule)
-        self.target = target
+        Villager.__init__(self, kn, name, rule, target)
 
     def chooseSpeech(self):
-        if random.random() > 0.5:
-            return self.kn[self.getName()]
-        else:
-            return 'not'+self.kn[self.getName()]
+        if self.rule == "naive":
+            if random.random() > 0.5:
+                return self.kn[self.getName()]
+            else:
+                return 'not'+self.kn[self.getName()]
 
     def retaliate(self):
-        card = 0
-        while True:
-            card = random.randrange(0, len(PlayerList))
-            if PlayerList[card] not in DeadList:
-                break
-        return PlayerList[card]
+        if self.target == "simple":
+            card = 0
+            while True:
+                card = random.randrange(0, len(PlayerList))
+                if PlayerList[card] not in DeadList and IdentityList[card] != "seer":
+                    break
+            return PlayerList[card]
 
 class Model:
     def __init__(self, rule, target):
         self.rule = rule
         self.night = 0
-        self.v1 = Villager([], 'v1', self.rule)
-        self.v2 = Villager([], 'v2', self.rule)
-        self.v3 = Villager([], 'v3', self.rule)
-        self.v4 = Villager([], 'v4', self.rule)
+        self.v1 = Villager([], 'v1', self.rule, target)
+        self.v2 = Villager([], 'v2', self.rule, target)
+        self.v3 = Villager([], 'v3', self.rule, target)
+        self.v4 = Villager([], 'v4', self.rule, target)
         self.villist = [self.v1, self.v2, self.v3, self.v4]
         self.w1 = Werewolf([], 'w1', self.rule, target)
         self.w2 = Werewolf([], 'w2', self.rule, target)
         self.w3 = Werewolf([], 'w3', self.rule, target)
         self.w4 = Werewolf([], 'w4', self.rule, target)
         self.wolflist = [self.w1, self.w2, self.w3, self.w4]
-        self.se = Seer([], 'se', self.rule, ['se'])
+        self.se = Seer([], 'se', self.rule, ['se'], target)
         self.wi = Witch([], 'wi', self.rule, target)
-        self.gr = Guardian([], 'gr', self.rule, [])
+        self.gr = Guardian([], 'gr', self.rule, [], target)
         self.ht = Hunter([], 'ht', self.rule, target)
         self.spelist = [self.se, self.wi, self.gr, self.ht]
     def initialSet(self):
@@ -321,8 +359,14 @@ class Model:
         return ""
 
 def main(argv):
+    defaultSpeechRule = "naive"
+    defaultTactics = "simple"
+    if (len(sys.argv)) > 1:
+        defaultSpeechRule = str(sys.argv[1])
+    if (len(sys.argv)) == 3:
+        defaultTactics = str(sys.argv[2])
     print(str(sys.argv))
-    m1 = Model('naive', 'simple')
+    m1 = Model(defaultSpeechRule, defaultTactics)
     m1.initialSet()
     while True:
         vicList, checked = m1.overnight()
@@ -335,6 +379,14 @@ def main(argv):
         if tempword != "":
             print(tempword + " after night "+str(m1.night) +". Game ends")
             break
+    print(DeadList)
+    # print(model.falseorigin)
+    # for p in m1.spelist:
+    #     print(p.kn)
+    # for p in m1.villist:
+    #     print(p.kn)
+    # for p in m1.wolflist:
+    #     print(p.kn)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
