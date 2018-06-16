@@ -19,7 +19,8 @@ class Player:
         self.kn = newset
 
     def changek(self, newk):
-        self.kn, falseo = model.checkconflict(self.kn, newk)
+        # print(newk)
+        self.kn = model.checkconflict(self.kn, newk)
 
     def getName(self):
         return self.name
@@ -76,6 +77,13 @@ class Seer(Villager):
 
     def seecard(self):
             card = 0
+            tempbin = 0
+            for i in DeadList:
+                if i in self.seen:
+                    tempbin += 1
+            if len(self.seen) + len(DeadList) - tempbin == len(PlayerList):
+                return ""
+
             while True:
                 card = random.randrange(0, len(PlayerList))
                 if PlayerList[card] not in self.seen and PlayerList[card] not in DeadList:
@@ -129,6 +137,8 @@ class Guardian(Villager):
         if night == 1:
             return self.getName()
         card = 0
+        if len(DeadList) == len(PlayerList)-1 and self.guarded == self.getName():
+            return ""
         while True:
             card = random.randrange(0, len(PlayerList))
             if PlayerList[card] not in DeadList and PlayerList[card] != self.guarded:
@@ -169,7 +179,7 @@ class Model:
         self.w3 = Werewolf([], 'w3', self.rule, target)
         self.w4 = Werewolf([], 'w4', self.rule, target)
         self.wolflist = [self.w1, self.w2, self.w3, self.w4]
-        self.se = Seer([], 'se', self.rule, [])
+        self.se = Seer([], 'se', self.rule, ['se'])
         self.wi = Witch([], 'wi', self.rule, target)
         self.gr = Guardian([], 'gr', self.rule, [])
         self.ht = Hunter([], 'ht', self.rule, target)
@@ -252,17 +262,18 @@ class Model:
                 vicList.append(victim)
 
         poisoned = ""
-        if self.wi.getName() not in DeadList:
+        if self.wi.getName() not in DeadList and len(DeadList) < len(PlayerList)-1:
             poisoned = self.wi.poison()
         if poisoned != "":
             DeadList.append(poisoned)
             vicList.append(poisoned)
 
-        if "ht" in vicList:
+        revenged = ""
+        if "ht" in vicList and len(DeadList) < len(PlayerList):
             revenged = self.ht.retaliate()
-            if revenged != "":
-                DeadList.append(revenged)
-                vicList.append(revenged)
+        if revenged != "":
+            DeadList.append(revenged)
+            vicList.append(revenged)
 
         for any in self.villist:
             if any.getName() in vicList:
@@ -275,18 +286,19 @@ class Model:
     def overday(self, vicList, checked):
         print(self.se.kn)
         self.announce(vicList, 'd')
-        if checked != "":
+        if checked != "" and checked not in vicList:
             self.announce([checked], 't')
         self.discuss()
         vicList = []
         executed = self.vote()
         DeadList.append(executed)
         vicList.append(executed)
-        if "ht" in vicList:
+        revenged = ""
+        if "ht" in vicList and len(DeadList) < len(PlayerList):
             revenged = self.ht.retaliate()
-            if revenged != "":
-                DeadList.append(revenged)
-                vicList.append(revenged)
+        if revenged != "":
+            DeadList.append(revenged)
+            vicList.append(revenged)
         for any in self.villist:
             if any.getName() in vicList:
                 self.villist.remove(any)
