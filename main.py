@@ -28,6 +28,14 @@ class Player:
     def getTarget(self):
         return self.getName()
 
+    def checkValidity(self, tocheck, checktype):
+        for k in self.kn[tocheck]:
+            belief, origin = k
+            if belief == checktype and origin == 't':
+                # print("if go")
+                return True
+        return False
+
 class Villager(Player):
 
     def __init__(self, kn, name, rule, target):
@@ -50,6 +58,14 @@ class Villager(Player):
                 if PlayerList[card] not in DeadList and PlayerList[card] != self.getName() and IdentityList[card] != 'seer':
                     break
             return card
+
+    def checkVillager(self, tocheck):
+        for k in self.kn[tocheck]:
+            belief, origin = k
+            if (belief == "villager" or belief == "witch" or belief == "seer" or belief == "guardian" or belief == "hunter" ) and origin == 't':
+                # print("if go")
+                return True
+        return False
 
 class Werewolf(Player):
 
