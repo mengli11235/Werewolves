@@ -45,10 +45,14 @@ class Villager(Player):
 
     def chooseSpeech(self):
         if self.rule == "naive":
-            if random.random() > 0.5:
-                return self.kn[self.getName()]
-            else:
-                return 'not'+self.kn[self.getName()]
+            return self.getName()
+
+        if self.rule == "first":
+            if self.rule == "naive":
+                if random.random() > 0.5:
+                    return self.getName()
+                else:
+                    return 'not' + self.getName()
 
     def villagervote(self):
         if self.rule == "naive":
@@ -76,10 +80,14 @@ class Werewolf(Player):
 
     def chooseSpeech(self):
         if self.rule == "naive":
-            if random.random() > 0.5:
-                return self.kn[self.getName()]
-            else:
-                return 'not'+self.kn[self.getName()]
+            return self.getName()
+
+        if self.rule == "first":
+            if self.rule == "naive":
+                if random.random() > 0.5:
+                    return self.getName()
+                else:
+                    return 'not' + self.getName()
 
     def chooseKill(self, night, killlist):
         if self.target == "simple":
@@ -102,13 +110,6 @@ class Seer(Villager):
     def __init__(self, kn, name, rule, seen, target):
         Villager.__init__(self, kn, name, rule, target)
         self.seen = seen
-
-    def chooseSpeech(self):
-        if self.rule == "naive":
-            if random.random() > 0.5:
-                return self.kn[self.getName()]
-            else:
-                return 'not' + self.kn[self.getName()]
 
     def seecard(self):
         if self.target == "simple":
@@ -135,13 +136,6 @@ class Witch(Villager):
         Villager.__init__(self, kn, name, rule, target)
         self.poisoned = 0
         self.revived = 0
-
-    def chooseSpeech(self):
-        if self.rule == "naive":
-            if random.random() > 0.5:
-                return self.kn[self.getName()]
-            else:
-                return 'not'+self.kn[self.getName()]
 
     def revive(self, victim):
         if self.target == "simple":
@@ -177,13 +171,6 @@ class Guardian(Villager):
         Villager.__init__(self, kn, name, rule, target)
         self.guarded = guarded
 
-    def chooseSpeech(self):
-        if self.rule == "naive":
-            if random.random() > 0.5:
-                return self.kn[self.getName()]
-            else:
-                return 'not'+self.kn[self.getName()]
-
     def guard(self, night):
         if self.target == "simple":
             if night == 1:
@@ -202,13 +189,6 @@ class Guardian(Villager):
 class Hunter(Villager):
     def __init__(self, kn, name, rule, target):
         Villager.__init__(self, kn, name, rule, target)
-
-    def chooseSpeech(self):
-        if self.rule == "naive":
-            if random.random() > 0.5:
-                return self.kn[self.getName()]
-            else:
-                return 'not'+self.kn[self.getName()]
 
     def retaliate(self):
         if self.target == "simple":
@@ -267,7 +247,12 @@ class Model:
                 p.changek((i, [(IdentityList[PlayerList.index(i)], announcetype)]))
 
     def discuss(self):
-        pass
+        for p in self.spelist:
+            p.chooseSpeech()
+        for p in self.villist:
+            p.chooseSpeech()
+        for p in self.wolflist:
+            p.chooseSpeech()
 
     def vote(self):
         bins = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -335,12 +320,14 @@ class Model:
         for any in self.spelist:
             if any.getName() in vicList:
                 self.spelist.remove(any)
+        if "se" not in vicList:
+            self.announce(["se"], 't')
         return vicList, checked
 
     def overday(self, vicList, checked):
-        print(self.se.kn)
+        print(self.v1.kn)
         self.announce(vicList, 'd')
-        if checked != "" and checked not in vicList:
+        if "se" not in vicList and checked != "" and checked not in vicList:
             self.announce([checked], 't')
         self.discuss()
         vicList = []
