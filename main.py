@@ -48,11 +48,10 @@ class Villager(Player):
             return self.getName()
 
         if self.rule == "first":
-            if self.rule == "naive":
-                if random.random() > 0.5:
-                    return self.getName()
-                else:
-                    return 'not' + self.getName()
+            if random.random() > 0.5:
+                return IdentityList[PlayerList.index(self.getName())]
+            else:
+                return 'not' + IdentityList[PlayerList.index(self.getName())]
 
     def villagervote(self):
         if self.rule == "naive":
@@ -83,11 +82,10 @@ class Werewolf(Player):
             return self.getName()
 
         if self.rule == "first":
-            if self.rule == "naive":
-                if random.random() > 0.5:
-                    return self.getName()
-                else:
-                    return 'not' + self.getName()
+            if random.random() > 0.5:
+                return self.getName()
+            else:
+                return 'not' + self.getName()
 
     def chooseKill(self, night, killlist):
         if self.target == "simple":
@@ -246,13 +244,28 @@ class Model:
             for i in toannounce:
                 p.changek((i, [(IdentityList[PlayerList.index(i)], announcetype)]))
 
+    def speechannounce(self, toannounce, announcetype):
+        for p in self.spelist:
+            for i in toannounce:
+                p.changek((announcetype, [(i, announcetype)]))
+        for p in self.villist:
+            for i in toannounce:
+                p.changek((announcetype, [(i, announcetype)]))
+        for p in self.wolflist:
+            for i in toannounce:
+                p.changek((announcetype, [(i, announcetype)]))
+
     def discuss(self):
         for p in self.spelist:
-            p.chooseSpeech()
+            toannounce = p.chooseSpeech()
+            print(toannounce)
+            self.speechannounce([toannounce], p.getName())
         for p in self.villist:
-            p.chooseSpeech()
+            toannounce = p.chooseSpeech()
+            self.speechannounce([toannounce], p.getName())
         for p in self.wolflist:
-            p.chooseSpeech()
+            toannounce = p.chooseSpeech()
+            self.speechannounce([toannounce], p.getName())
 
     def vote(self):
         bins = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]

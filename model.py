@@ -40,6 +40,10 @@ def checkconflict(kn, newk):
         belief, origin = k
         for v in value:
             contra = contradicts(k, v)
+            # if mere duplicates
+            if v in kn[key]:
+                value.remove(v)
+                continue
             # if new knowledge prevails old belief
             if contra == -1:
                 kn[key].remove(k)
