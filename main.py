@@ -14,13 +14,15 @@ class Player:
     def __init__(self, kn, name):
         self.kn = kn
         self.name = name
+        self.falseorigin = [0] * 14
 
     def update(self, newset):
         self.kn = newset
 
     def changek(self, newk):
         # print(newk)
-        self.kn = model.checkconflict(self.kn, newk)
+        self.kn, self.falseorigin = model.checkconflict(self.kn, newk, self.falseorigin)
+        # print(self.falseorigin)
 
     def getName(self):
         return self.name
@@ -44,14 +46,37 @@ class Villager(Player):
         self.target = target
 
     def chooseSpeech(self):
+        playerAlive = PlayerList[:]
+        for x in DeadList:
+            # print(x)
+            if x in playerAlive:
+                playerAlive.remove(x)
+
+        if 'se' in playerAlive:
+            playerAlive.remove('se')
+        if self.getName() in playerAlive:
+            playerAlive.remove(self.getName())
+
         if self.rule == "naive":
-            return self.getName()
+            return IdentityList[PlayerList.index(self.getName())]
 
         if self.rule == "first":
             if random.random() > 0.5:
                 return IdentityList[PlayerList.index(self.getName())]
             else:
                 return 'not' + IdentityList[PlayerList.index(self.getName())]
+
+        if self.rule == "second":
+            if random.random() > 0.5:
+                return 'knowing' + playerAlive[random.randrange(0, len(playerAlive))]
+            else:
+                return 'not knowing' + playerAlive[random.randrange(0, len(playerAlive))]
+
+        if self.rule == "third":
+            if random.random() > 0.5:
+                return 'knowing' + playerAlive[random.randrange(0, len(playerAlive))] + 'knows' + IdentityList[PlayerList.index(self.getName())]
+            else:
+                return 'not knowing' + playerAlive[random.randrange(0, len(playerAlive))] + 'knows' + IdentityList[PlayerList.index(self.getName())]
 
     def villagervote(self):
         if self.rule == "naive":
@@ -62,6 +87,20 @@ class Villager(Player):
                     break
             return card
 
+        else:
+            falseO = self.falseorigin[2:]
+            playerAlive = PlayerList[:]
+            for x in DeadList:
+                # print(x)
+                if x in playerAlive:
+                    i = playerAlive.index(x)
+                    del falseO[i]
+                    del playerAlive[i]
+            # print(playerAlive)
+
+            return PlayerList.index(playerAlive[falseO.index(max(falseO))])
+
+    # function unused in final version 
     def checkVillager(self, tocheck):
         for k in self.kn[tocheck]:
             belief, origin = k
@@ -78,30 +117,63 @@ class Werewolf(Player):
         self.target = target
 
     def chooseSpeech(self):
+        playerAlive = PlayerList[:]
+        for x in DeadList:
+            # print(x)
+            if x in playerAlive:
+                playerAlive.remove(x)
+
+        if 'se' in playerAlive:
+            playerAlive.remove('se')
+        if self.getName() in playerAlive:
+            playerAlive.remove(self.getName())
+
         if self.rule == "naive":
-            return self.getName()
+            return IdentityList[PlayerList.index(self.getName())]
 
         if self.rule == "first":
             if random.random() > 0.5:
-                return self.getName()
+                return IdentityList[PlayerList.index(self.getName())]
             else:
-                return 'not' + self.getName()
+                return 'not' + IdentityList[PlayerList.index(self.getName())]
 
-    def chooseKill(self, night, killlist):
+        if self.rule == "second":
+            if random.random() > 0.5:
+                return 'knowing' + playerAlive[random.randrange(0, len(playerAlive))]
+            else:
+                return 'not knowing' + playerAlive[random.randrange(0, len(playerAlive))]
+
+        if self.rule == "third":
+            if random.random() > 0.5:
+                return 'knowing' + playerAlive[random.randrange(0, len(playerAlive))] + 'knows' + IdentityList[PlayerList.index(self.getName())]
+            else:
+                return 'not knowing' + playerAlive[random.randrange(0, len(playerAlive))] + 'knows' + IdentityList[PlayerList.index(self.getName())]
+
+    def chooseKill(self, night):
         if self.target == "simple":
             if night == 1:
-                return random.randrange(0, len(killlist))
+                return random.randrange(4, len(PlayerList))
             else:
-                return random.randrange(0, len(killlist))
+                while True:
+                    card = random.randrange(4, len(PlayerList))
+                    if PlayerList[card] not in DeadList:
+                        return card
 
     def wolfvote(self):
         if self.rule == "naive":
             card = 0
             while True:
                 card = random.randrange(4, len(PlayerList))
-                if PlayerList[card] not in DeadList and PlayerList[card] != self.getName():
+                if PlayerList[card] not in DeadList:
                     break
             return card
+
+        else:
+            while True:
+                # print("woo")
+                card = random.randrange(4, len(PlayerList))
+                if PlayerList[card] not in DeadList:
+                    return card
 
 
 class Seer(Villager):
@@ -140,9 +212,11 @@ class Witch(Villager):
             if self.revived == 0:
                 if victim == self.getName():
                     self.revived = 1
+                    print("The witch chose to revive " + victim)
                     return True
                 elif random.random() > 0.5:
                     self.revived = 1
+                    print("The witch chose to revive " + victim)
                     return True
                 else:
                     return False
@@ -154,7 +228,7 @@ class Witch(Villager):
                     card = 0
                     while True:
                         card = random.randrange(0, len(PlayerList))
-                        if PlayerList[card] not in DeadList and  PlayerList[card] != self.getName() and IdentityList[card] != "seer":
+                        if PlayerList[card] not in DeadList and PlayerList[card] != self.getName():
                             break
                     self.poisoned = 1
                     return PlayerList[card]
@@ -167,7 +241,7 @@ class Witch(Villager):
 class Guardian(Villager):
     def __init__(self, kn, name, rule, guarded, target):
         Villager.__init__(self, kn, name, rule, target)
-        self.guarded = guarded
+        self.guarded = self.getName()
 
     def guard(self, night):
         if self.target == "simple":
@@ -181,7 +255,6 @@ class Guardian(Villager):
                 if PlayerList[card] not in DeadList and PlayerList[card] != self.guarded:
                     break
             self.guarded = PlayerList[card]
-            print(self.guarded)
             return PlayerList[card]
 
 class Hunter(Villager):
@@ -193,7 +266,7 @@ class Hunter(Villager):
             card = 0
             while True:
                 card = random.randrange(0, len(PlayerList))
-                if PlayerList[card] not in DeadList and IdentityList[card] != "seer":
+                if PlayerList[card] not in DeadList:
                     break
             return PlayerList[card]
 
@@ -258,7 +331,7 @@ class Model:
     def discuss(self):
         for p in self.spelist:
             toannounce = p.chooseSpeech()
-            print(toannounce)
+            # print(toannounce)
             self.speechannounce([toannounce], p.getName())
         for p in self.villist:
             toannounce = p.chooseSpeech()
@@ -276,27 +349,24 @@ class Model:
         for w in self.wolflist:
             bins[w.wolfvote()] += 1
         vic = PlayerList[bins.index(max(bins))]
+
+        # There is a tie in voting
+        max1 = max(bins)
+        bins.remove(max1)
+        if max(bins) == max1:
+            return ""
         return vic
 
     def wolfKill(self):
-        bins = []
-        if len(self.villist) < len(self.spelist):
-            bins = [0] * len(self.villist)
-            for w in self.wolflist:
-                bins[w.chooseKill(self.night, self.villist)] += 1
-        else:
-            bins = [0] * len(self.spelist)
-            for w in self.wolflist:
-                bins[w.chooseKill(self.night, self.spelist)] += 1
-
-        if len(self.villist) < len(self.spelist):
-            vic = self.villist[bins.index(max(bins))].getName()
-        else:
-            vic = self.spelist[int(bins.index(max(bins)))].getName()
+        bins = [0] * len(PlayerList)
+        for w in self.wolflist:
+            bins[w.chooseKill(self.night)] += 1
+        vic = PlayerList[bins.index(max(bins))]
         return vic
 
     def overnight(self):
         self.night += 1
+        print("The night " + str(self.night) + " begins:")
         # my_tuple = tuple(my_list)
 
         guarded = ""
@@ -308,17 +378,21 @@ class Model:
         vicList = []
         victim = self.wolfKill()
 
-        if not self.wi.revive(victim) or self.wi.getName() in DeadList:
-            if victim != guarded:
+        if self.wi.getName() in DeadList or not self.wi.revive(victim):
+            if self.gr.getName() in DeadList or victim != guarded:
                 DeadList.append(victim)
                 vicList.append(victim)
+                print("Player " + victim + " has been killed by wolves;")
+            else:
+                print("The guardian guards " + self.gr.guarded + " this night.")
 
         poisoned = ""
-        if self.wi.getName() not in DeadList and len(DeadList) < len(PlayerList)-1:
+        if self.wi.getName() not in DeadList and len(DeadList) < len(PlayerList)-2:
             poisoned = self.wi.poison()
         if poisoned != "":
             DeadList.append(poisoned)
             vicList.append(poisoned)
+            print("Player " + poisoned + " has been poisoned by the witch;")
 
         revenged = ""
         if "ht" in vicList and len(DeadList) < len(PlayerList):
@@ -326,6 +400,7 @@ class Model:
         if revenged != "":
             DeadList.append(revenged)
             vicList.append(revenged)
+            print("Player " + revenged + " has been killed by angry hunter;")
 
         for any in self.villist:
             if any.getName() in vicList:
@@ -338,21 +413,27 @@ class Model:
         return vicList, checked
 
     def overday(self, vicList, checked):
-        print(self.v1.kn)
+        # print(self.v1.kn)
+        print("Next day:")
         self.announce(vicList, 'd')
-        if "se" not in vicList and checked != "" and checked not in vicList:
+        if "se" not in vicList and "se" not in DeadList and checked != "" and checked not in vicList:
             self.announce([checked], 't')
         self.discuss()
         vicList = []
         executed = self.vote()
-        DeadList.append(executed)
-        vicList.append(executed)
+        if executed != "":
+            DeadList.append(executed)
+            vicList.append(executed)
+            print("Player " + executed + " has been executed by the majority vote;")
+        else:
+            print("There is a tie in voting, no one is executed")
         revenged = ""
         if "ht" in vicList and len(DeadList) < len(PlayerList):
             revenged = self.ht.retaliate()
         if revenged != "":
             DeadList.append(revenged)
             vicList.append(revenged)
+            print("Player " + revenged + " has been killed by angry hunter;")
         for any in self.villist:
             if any.getName() in vicList:
                 self.villist.remove(any)
@@ -366,36 +447,46 @@ class Model:
 
 
     def checkwin(self):
-        if not self.wolflist:
-            return "The villagers win"
-        if not self.spelist:
-            return "The werewolves win"
-        if not self.villist:
-            return "The werewolves win"
-        return ""
+        if 'w1' in DeadList and 'w2' in DeadList and 'w3' in DeadList and 'w4' in DeadList:
+            return "The villagers win", 0
+        if 'se' in DeadList and 'wi' in DeadList and 'gr' in DeadList and 'ht' in DeadList:
+            return "The werewolves win", 1
+        if 'v1' in DeadList and 'v2' in DeadList and 'v3' in DeadList and 'v4' in DeadList:
+            return "The werewolves win", 1
+        return "", 0
 
 def main(argv):
-    defaultSpeechRule = "naive"
+    defaultSpeechRule = "first"
     defaultTactics = "simple"
     if (len(sys.argv)) > 1:
         defaultSpeechRule = str(sys.argv[1])
     if (len(sys.argv)) == 3:
         defaultTactics = str(sys.argv[2])
     print(str(sys.argv))
-    m1 = Model(defaultSpeechRule, defaultTactics)
-    m1.initialSet()
-    while True:
-        vicList, checked = m1.overnight()
-        tempword = m1.checkwin()
-        if tempword != "":
-            print(tempword + " after night "+str(m1.night) +". Game ends")
-            break
-        m1.overday(vicList, checked)
-        tempword = m1.checkwin()
-        if tempword != "":
-            print(tempword + " after night "+str(m1.night) +". Game ends")
-            break
-    print(DeadList)
+    epochindex = 0
+    scoreboard = [0, 0]
+    while epochindex < 100:
+        m1 = Model(defaultSpeechRule, defaultTactics)
+        m1.initialSet()
+        epochindex += 1
+        print("Game Iteration " + str(epochindex))
+        global DeadList
+        DeadList = []
+        while True:
+            vicList, checked = m1.overnight()
+            tempword, score = m1.checkwin()
+            if tempword != "":
+                print(tempword + " after night "+str(m1.night) +". Game ends")
+                scoreboard[score] += 1
+                break
+            m1.overday(vicList, checked)
+            tempword, score = m1.checkwin()
+            if tempword != "":
+                print(tempword + " after night "+str(m1.night) +". Game ends")
+                scoreboard[score] += 1
+                break
+        print(DeadList)
+    print("Final score[villagers, werewolves]: " +str(scoreboard))
     # print(model.falseorigin)
     # for p in m1.spelist:
     #     print(p.kn)

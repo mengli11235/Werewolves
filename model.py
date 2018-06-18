@@ -1,7 +1,6 @@
 #!/usr/bin/python
 OriginList = ['t', 'd', 'w1', 'w2', 'w3', 'w4', 'v1', 'v2', 'v3', 'v4', 'se', 'wi', 'gr', 'ht']
 Cardlist = ['werewolf', 'villager', 'seer', 'witch', 'guardian', 'hunter']
-falseorigin = [0] * len(OriginList)
 
 def contrarule(oldb, newb):
     if 'not'+oldb == newb or 'not'+newb == oldb:
@@ -12,7 +11,7 @@ def contrarule(oldb, newb):
         return False
 
 
-def contradicts(oldk, newk):
+def contradicts(oldk, newk, falseorigin):
     # if both the same
     if oldk[0] == newk[0]:
         return 2
@@ -27,19 +26,20 @@ def contradicts(oldk, newk):
         elif newk[1] == 'd':
             return -2
         # otherwise check their credibility
-        if falseorigin[OriginList.index(newk[1])] < falseorigin[OriginList.index(oldk[0])]:
+        if falseorigin[OriginList.index(newk[1])] < falseorigin[OriginList.index(oldk[1])]:
+            # print(falseorigin)
             return -1
         else:
             return 1
     return 0
 
-def checkconflict(kn, newk):
+def checkconflict(kn, newk, falseorigin):
     key, value = newk
     # print(key)
     for k in kn[key]:
         belief, origin = k
         for v in value:
-            contra = contradicts(k, v)
+            contra = contradicts(k, v, falseorigin)
             # if mere duplicates
             if v in kn[key]:
                 value.remove(v)
@@ -69,4 +69,4 @@ def checkconflict(kn, newk):
         for v in value:
             kn[key].append(v)
     # print(falseorigin)
-    return kn
+    return kn, falseorigin
