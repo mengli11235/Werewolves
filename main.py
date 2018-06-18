@@ -502,7 +502,7 @@ class Model:
 
 def main(argv):
     # commandline input
-    defaultSpeechRule = "second"
+    defaultSpeechRule = "first"
     defaultTactics = "simple"
     if (len(sys.argv)) > 1:
         defaultSpeechRule = str(sys.argv[1])
