@@ -2,6 +2,7 @@
 OriginList = ['t', 'd', 'w1', 'w2', 'w3', 'w4', 'v1', 'v2', 'v3', 'v4', 'se', 'wi', 'gr', 'ht']
 Cardlist = ['werewolf', 'villager', 'seer', 'witch', 'guardian', 'hunter']
 
+# small belief checking function
 def contrarule(oldb, newb):
     if 'not'+oldb == newb or 'not'+newb == oldb:
         return True
@@ -10,13 +11,14 @@ def contrarule(oldb, newb):
     else:
         return False
 
-
+# more complicated higher funtion
 def contradicts(oldk, newk, falseorigin):
     # if both the same
     if oldk[0] == newk[0]:
         return 2
     # if contradicts
     if contrarule(oldk[0], newk[0]):
+        # if truth or death from announcement
         if oldk[1] == 't' or oldk[1] == 'd':
             return 1
         # new knowledge prevails old belief
@@ -33,6 +35,7 @@ def contradicts(oldk, newk, falseorigin):
             return 1
     return 0
 
+# major interface function
 def checkconflict(kn, newk, falseorigin):
     key, value = newk
     # print(key)
