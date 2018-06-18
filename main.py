@@ -502,7 +502,7 @@ class Model:
 
 def main(argv):
     # commandline input
-    defaultSpeechRule = "first"
+    defaultSpeechRule = "second"
     defaultTactics = "simple"
     if (len(sys.argv)) > 1:
         defaultSpeechRule = str(sys.argv[1])
@@ -512,7 +512,7 @@ def main(argv):
     # index and scores of epoches
     epochindex = 0
     scoreboard = [0, 0]
-    while epochindex < 100:
+    while epochindex < 1000:
         m1 = Model(defaultSpeechRule, defaultTactics)
         m1.initialSet()
         epochindex += 1
